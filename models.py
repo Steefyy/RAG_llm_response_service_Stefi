@@ -21,3 +21,10 @@ class QuizRequest(BaseModel):
     maxSaptamana: int = None
     documentId: int = None
     nrIntrebari: int = 5
+
+class FlashcardRequest(BaseModel):
+    cursId: int
+    maxSaptamana: int = None
+    documentId: int = None
+    nrFlashcards: int = 5
+

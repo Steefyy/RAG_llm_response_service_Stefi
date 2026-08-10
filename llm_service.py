@@ -43,3 +43,18 @@ def genereaza_quiz(prompt: str) -> str:
         )
     )
     return response.text
+
+def genereaza_flashcards(prompt: str) -> str:
+    """
+    Generează un set de flashcard-uri sub formă de JSON structurat folosind Gemini.
+    """
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.7,
+            response_mime_type="application/json"
+        )
+    )
+    return response.text
+
