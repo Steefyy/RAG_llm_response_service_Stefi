@@ -39,13 +39,13 @@ def construieste_prompt(intrebare: str, istoric: list, context_chunks: list) -> 
             
     parti.append(f"\nIntrebare noua de la student: {intrebare}\n\nRaspuns:")
     return "\n".join(parti)
-
 def construieste_prompt_quiz(context_chunks: list, nr_intrebari: int, dificultate: str = "MEDIU") -> str:
-    dificultate_romana = {
+    dificultate_dict = {
         "USOR": "UȘOR. Întrebările trebuie să fie directe, de memorare și recunoaștere a definițiilor, termenilor sau faptelor menționate explicit și textual în context. Răspunsurile corecte pot fi deduse direct, fără interpretare profundă sau conexiuni complexe. Distractorii (variantele greșite) trebuie să fie clar diferiți de răspunsul corect.",
         "MEDIU": "MEDIU. Întrebările trebuie să testeze înțelegerea conceptelor și capacitatea de a face conexiuni simple (de ex: cauză-efect, asemănări/diferențe, exemplificări simple). Răspunsul corect nu este neapărat verbatim în text, dar poate fi dedus prin corelarea a 2-3 propoziții sau paragrafe. Distractorii trebuie să fie plauzibili pentru cineva care a citit textul în mare.",
         "AVANSAT": "AVANSAT. Întrebările trebuie să testeze capacitatea de analiză profundă, deducție logică și sinteză a informațiilor complexe din text. Acestea pot implica detalii de finețe, cazuri excepționale, interpretări de nuanță sau raționamente bazate pe regulile descrise în context. Distractorii trebuie să fie foarte puternici, plauzibili și să pară corecți la o primă vedere, fiind invalidați doar de detalii subtile din text."
-    }.get(dificultate.upper(), "MEDIU")
+    }
+    dificultate_romana = dificultate_dict.get(dificultate.upper(), dificultate_dict["MEDIU"])
 
     quiz_system_prompt = f"""Esti un profesor universitar asistent. Sarcina ta este sa generezi un test grila (quiz) cu EXACT {nr_intrebari} intrebari bazate EXCLUSIV pe textele oferite in contextul de mai jos.
 
