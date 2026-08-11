@@ -101,7 +101,7 @@ def generate_quiz(request: QuizRequest):
         )
 
     # 2. Construim promptul cu contextul extras
-    prompt = construieste_prompt_quiz(context_chunks, request.nrIntrebari)
+    prompt = construieste_prompt_quiz(context_chunks, request.nrIntrebari, request.dificultate or "MEDIU")
 
     # 3. Apelăm Gemini în format JSON
     try:

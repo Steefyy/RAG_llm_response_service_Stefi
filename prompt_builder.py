@@ -40,11 +40,18 @@ def construieste_prompt(intrebare: str, istoric: list, context_chunks: list) -> 
     parti.append(f"\nIntrebare noua de la student: {intrebare}\n\nRaspuns:")
     return "\n".join(parti)
 
-def construieste_prompt_quiz(context_chunks: list, nr_intrebari: int) -> str:
+def construieste_prompt_quiz(context_chunks: list, nr_intrebari: int, dificultate: str = "MEDIU") -> str:
+    dificultate_romana = {
+        "USOR": "UȘOR (întrebări directe, din conceptele de bază și definiții evidente)",
+        "MEDIU": "MEDIU (întrebări de înțelegere medie, conexiuni simple între concepte)",
+        "AVANSAT": "AVANSAT (întrebări dificile, de analiză profundă, detalii fine și raționamente complexe pe baza textului)"
+    }.get(dificultate.upper(), "MEDIU (întrebări de înțelegere medie, conexiuni simple între concepte)")
+
     quiz_system_prompt = f"""Esti un profesor universitar asistent. Sarcina ta este sa generezi un test grila (quiz) cu EXACT {nr_intrebari} intrebari bazate EXCLUSIV pe textele oferite in contextul de mai jos.
 
 Reguli de generare:
-1. Fiecare intrebare trebuie sa fie corecta academic, clara si sa aiba raspunsul direct deductibil din textele din context. Nu folosi sub nicio forma cunostinte din afara contextului.
+1. Fiecare intrebare trebuie sa aiba nivelul de dificultate: {dificultate_romana}.
+2. Fiecare intrebare trebuie sa fie corecta academic, clara si sa aiba raspunsul direct deductibil din textele din context. Nu folosi sub nicio forma cunostinte din afara contextului.
 2. Fiecare intrebare trebuie sa aiba intre 4 si 6 variante de raspuns (optiuni etichetate cu A, B, C, D si optional E, F in functie de complexitate).
 3. Doar O SINGURA varianta de raspuns trebuie sa fie corecta.
 4. Explica detaliat de ce varianta indicata este cea corecta si/sau de ce celelalte sunt gresite, facand referire la conceptele din text.

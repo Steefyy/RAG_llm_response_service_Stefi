@@ -21,6 +21,7 @@ class QuizRequest(BaseModel):
     maxSaptamana: int = None
     documentId: int = None
     nrIntrebari: int = 5
+    dificultate: str = "MEDIU"
 
 class FlashcardRequest(BaseModel):
     cursId: int
