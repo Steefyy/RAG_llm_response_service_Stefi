@@ -42,20 +42,21 @@ def construieste_prompt(intrebare: str, istoric: list, context_chunks: list) -> 
 
 def construieste_prompt_quiz(context_chunks: list, nr_intrebari: int, dificultate: str = "MEDIU") -> str:
     dificultate_romana = {
-        "USOR": "UȘOR (întrebări directe, din conceptele de bază și definiții evidente)",
-        "MEDIU": "MEDIU (întrebări de înțelegere medie, conexiuni simple între concepte)",
-        "AVANSAT": "AVANSAT (întrebări dificile, de analiză profundă, detalii fine și raționamente complexe pe baza textului)"
-    }.get(dificultate.upper(), "MEDIU (întrebări de înțelegere medie, conexiuni simple între concepte)")
+        "USOR": "UȘOR. Întrebările trebuie să fie directe, de memorare și recunoaștere a definițiilor, termenilor sau faptelor menționate explicit și textual în context. Răspunsurile corecte pot fi deduse direct, fără interpretare profundă sau conexiuni complexe. Distractorii (variantele greșite) trebuie să fie clar diferiți de răspunsul corect.",
+        "MEDIU": "MEDIU. Întrebările trebuie să testeze înțelegerea conceptelor și capacitatea de a face conexiuni simple (de ex: cauză-efect, asemănări/diferențe, exemplificări simple). Răspunsul corect nu este neapărat verbatim în text, dar poate fi dedus prin corelarea a 2-3 propoziții sau paragrafe. Distractorii trebuie să fie plauzibili pentru cineva care a citit textul în mare.",
+        "AVANSAT": "AVANSAT. Întrebările trebuie să testeze capacitatea de analiză profundă, deducție logică și sinteză a informațiilor complexe din text. Acestea pot implica detalii de finețe, cazuri excepționale, interpretări de nuanță sau raționamente bazate pe regulile descrise în context. Distractorii trebuie să fie foarte puternici, plauzibili și să pară corecți la o primă vedere, fiind invalidați doar de detalii subtile din text."
+    }.get(dificultate.upper(), "MEDIU")
 
     quiz_system_prompt = f"""Esti un profesor universitar asistent. Sarcina ta este sa generezi un test grila (quiz) cu EXACT {nr_intrebari} intrebari bazate EXCLUSIV pe textele oferite in contextul de mai jos.
 
 Reguli de generare:
-1. Fiecare intrebare trebuie sa aiba nivelul de dificultate: {dificultate_romana}.
+1. Fiecare intrebare trebuie sa respecte cu strictețe nivelul de dificultate: {dificultate_romana}.
 2. Fiecare intrebare trebuie sa fie corecta academic, clara si sa aiba raspunsul direct deductibil din textele din context. Nu folosi sub nicio forma cunostinte din afara contextului.
-2. Fiecare intrebare trebuie sa aiba intre 4 si 6 variante de raspuns (optiuni etichetate cu A, B, C, D si optional E, F in functie de complexitate).
-3. Doar O SINGURA varianta de raspuns trebuie sa fie corecta.
-4. Explica detaliat de ce varianta indicata este cea corecta si/sau de ce celelalte sunt gresite, facand referire la conceptele din text.
-5. Raspunsul tau trebuie sa fie STRICT un tablou JSON (list) valid cu exact {nr_intrebari} elemente, fara alte texte, markdown sau introduceri.
+3. Fiecare intrebare trebuie sa aiba intre 4 si 6 variante de raspuns (optiuni etichetate cu A, B, C, D si optional E, F in functie de complexitate).
+4. Doar O SINGURA varianta de raspuns trebuie sa fie corecta.
+5. Explica detaliat de ce varianta indicata este cea corecta si/sau de ce celelalte sunt gresite, facand referire la conceptele din text.
+6. Fiecare întrebare din JSON trebuie să conțină un câmp suplimentar numit "dificultate" cu valoarea exactă "{dificultate.upper()}".
+7. Raspunsul tau trebuie sa fie STRICT un tablou JSON (list) valid cu exact {nr_intrebari} elemente, fara alte texte, markdown sau introduceri.
 
 Formatul JSON cerut:
 [
@@ -70,7 +71,8 @@ Formatul JSON cerut:
       "F": "A sasea varianta (optionala)"
     }},
     "raspuns_corect": "Litera raspunsului corect (ex: B)",
-    "explicatie": "Explicatie detaliata de ce B este raspunsul corect..."
+    "explicatie": "Explicatie detaliata de ce B este raspunsul corect...",
+    "dificultate": "{dificultate.upper()}"
   }}
 ]
 """
