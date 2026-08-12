@@ -10,9 +10,9 @@ from datetime import datetime
 from opentelemetry import trace
 
 
-SERVICE = os.getenv("SERVICE_NAME", "reranker")
+SERVICE = os.getenv("SERVICE_NAME", "llm-response")
 
-# atributele standard ale unui LogRecord — tot ce nu e aici a venit din extra={}
+# Atributele standard ale unui LogRecord
 _STD = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__) | {
     "message", "asctime", "taskName",
 }
@@ -40,7 +40,8 @@ class JsonFormatter(logging.Formatter):
         if ctx.is_valid:
             payload["trace_id"] = format(ctx.trace_id, "032x")
             payload["span_id"] = format(ctx.span_id, "016x")
-        # orice ai pasat prin extra={...} ajunge automat in JSON
+
+        # Exportare atribute suplimentare transmise via extra
         for key, value in record.__dict__.items():
             if key not in _STD and key not in payload:
                 payload[key] = value
