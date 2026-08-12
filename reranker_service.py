@@ -4,8 +4,11 @@ from logging_ctx import request_id_var, user_var
 from pydantic import BaseModel
 
 RERANKER_URL = os.environ.get("RERANKER_URL", "http://localhost:8002/api/rerank/chunks")
+RAG_SERVICE_USERNAME = os.environ.get("RAG_SERVICE_USERNAME")
+RAG_SERVICE_PASSWORD = os.environ.get("RAG_SERVICE_PASSWORD")
+RERANKER_AUTH = (RAG_SERVICE_USERNAME, RAG_SERVICE_PASSWORD) if RAG_SERVICE_USERNAME and RAG_SERVICE_PASSWORD else None
 
-# Definim modelele contractului de Reranker conform specificatiilor primite de la Persoana C
+# Definim modelele contractului de Reranker
 class Chunk(BaseModel):
     text: str
     score: float
@@ -28,20 +31,19 @@ class RerankResponse(BaseModel):
 
 def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
     """
-    Trimite documentele brute catre serviciul de Reranker (Persoana C).
-    Daca serviciul Persoanei C este offline sau neterminat, 
-    facem un fallback simulat si pastram primele 5 rezultate.
+    Trimite documentele brute catre serviciul de Reranker.
+    Daca serviciul de reranking este offline sau returneaza o eroare,
+    se revine la fallback-ul implicit (pastrarea primelor rezultate brute).
     """
     if not contexte_brute:
         return []
         
     try:
-        # Pregatim datele in formatul cerut de contractul de Reranker (RerankRequest)
+        # Pregatim payload-ul conform specificatiilor RerankRequest
         chunks_payload = []
         for doc in contexte_brute:
             chunks_payload.append({
                 "text": doc["text"],
-                # Deoarece suntem in faza de mock pentru vector search, punem un scor initial simulat de 1.0
                 "score": 1.0, 
                 "chunk_id": str(doc["document_id"])
             })
@@ -52,30 +54,27 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
             "top_k": 5
         }
 
-        # Apel HTTP real catre serviciul de Reranker al Persoanei C
         with httpx.Client(timeout=30.0) as client:
             response = client.post(
                 RERANKER_URL,
                 json=request_body,
                 headers={"X-Request-ID": request_id_var.get(), "X-User": user_var.get()},
+                auth=RERANKER_AUTH,
             )
             
             if response.status_code == 200:
                 data = response.json()
-                # Parsam raspunsul conform contractului RerankResponse
                 reranked_chunks = data.get("reranked_chunks", [])
                 
-                # Reordonam si refacem structura de documente pentru sistemul nostru
+                # Reordonam documentele originale pastrand metadatele (week_id, curs_id)
                 contexte_ordonate = []
                 for rc in reranked_chunks:
-                    doc_id = int(rc["chunk_id"]) # convertim inapoi la int pentru compatibilitate cu Java
+                    doc_id = int(rc["chunk_id"])
                     
-                    # Gasim documentul original corespunzator din contextul brut pentru a pastra restul metadatelor (week_id, curs_id)
                     original_doc = next((d for d in contexte_brute if d["document_id"] == doc_id), None)
                     if original_doc:
                         contexte_ordonate.append(original_doc)
                     else:
-                        # Altfel cream o structura minimala pe baza a ce a returnat Reranker-ul
                         contexte_ordonate.append({
                             "document_id": doc_id,
                             "curs_id": 45,
@@ -84,7 +83,6 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
                         })
                 return contexte_ordonate
     except Exception as e:
-        print(f"[RERANKER WARNING] Serviciul Reranker offline sau eroare: {e}. Folosim fallback simulat.")
+        print(f"[RERANKER WARNING] Serviciul Reranker offline sau eroare: {e}. Folosim fallback.")
         
-    # Fallback simulat: luam primele 5 contexte brute
     return contexte_brute[:5]

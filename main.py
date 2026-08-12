@@ -72,7 +72,7 @@ def health():
 
 @app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verify_credentials)])
 def chat(request: ChatRequest):
-    # 0. Rulam filtrul de securitate local (Prompt Injection Guard) - 100% Gratuit si Offline
+    # Validare intrebare impotriva atacurilor de tip prompt injection
     status_securitate = valideaza_intrebare(request.intrebare)
     if not status_securitate.safe:
         return ChatResponse(
@@ -83,18 +83,18 @@ def chat(request: ChatRequest):
             surseFolosite=[]
         )
 
-    # 1. Cautam si filtram contextul semantic din Qdrant
+    # Cautare context semantic in vector DB
     context_chunks_brute = cauta_context(
         request.intrebare, request.cursId, request.maxSaptamanaParcursa
     )
 
-    # 2. Reordonam si selectam cele mai relevante 5 propozitii prin Reranker (Persoana C)
+    # Reordonare si filtrare documente folosind serviciul de reranking
     context_chunks = reordoneaza_contexte(request.intrebare, context_chunks_brute)
 
-    # 3. Construim promptul cu contextul si istoricul trimis de monolit
+    # Constructie prompt pe baza contextului si a istoricului conversatiei
     prompt = construieste_prompt(request.intrebare, request.istoricConversatie, context_chunks)
 
-    # 4. Apelam LLM-ul (Gemini) cu parametrii de temperatura aplicati
+    # Generare raspuns folosind serviciul LLM
     try:
         raspuns_text = genereaza_raspuns(prompt)
     except Exception:
@@ -103,7 +103,7 @@ def chat(request: ChatRequest):
             detail="Serviciul LLM este momentan indisponibil. Incearca din nou in cateva momente."
         )
 
-    # 5. Extragem document_id-urile ca surse folosite
+    # Extragere surse (document_id) folosite
     surse_folosite = list(set([c["document_id"] for c in context_chunks]))
 
     return ChatResponse(raspuns=raspuns_text, surseFolosite=surse_folosite)

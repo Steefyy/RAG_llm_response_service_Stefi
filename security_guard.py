@@ -51,8 +51,8 @@ class GuardStatus:
 
 def valideaza_intrebare(intrebare: str) -> GuardStatus:
     """
-    Verifică offline și 100% gratuit dacă întrebarea studentului conține
-    tentative de Prompt Injection / Jailbreak, extracție de prompt sau manipulare a instrucțiunilor.
+    Verifica daca intrebarea studentului contine
+    tentative de Prompt Injection / Jailbreak, extractie de prompt sau manipulare a instructiunilor.
     """
     if not intrebare or not intrebare.strip():
         return GuardStatus(safe=True)
