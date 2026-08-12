@@ -77,19 +77,14 @@ def obtine_embedding_intrebare(intrebare: str) -> list[float] | None:
 
 def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict]:
     """
-    Filtreaza documentele conform regulilor din contract:
-    - cursId == curs_id
-    - nrSaptamana <= max_saptamana (in cazul nostru week_id <= max_saptamana)
-
-    Daca USE_QDRANT_MOCK=false in .env:
-    1. Obține vectorul întrebării apelând Embedder Service (POST /api/query/embed)
-    2. Efectuează o căutare semantică vectorială pe serverul Qdrant filtrată pe curs și săptămână.
+    Cauta context semantic pentru o intrebare data, filtrat dupa curs_id si saptamana maxima parcursa.
+    Efectueaza o cautare vectoriala pe Qdrant daca use_mock este fals.
     """
     use_mock = os.environ.get("USE_QDRANT_MOCK", "true").lower() in ("true", "1", "yes")
 
     if not use_mock:
         try:
-            # 1. Preluare vector embedding pentru intrebare de la Embedder Service
+            # Preluare embedding intrebare
             query_vector = obtine_embedding_intrebare(intrebare)
 
             if query_vector:
@@ -102,7 +97,7 @@ def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict
 
                 client = QdrantClient(host=host, port=port, timeout=10.0)
 
-                # Filtru de metadate pe curs si saptamana parcursa
+                # Filtrare dupa curs si saptamana parcursa
                 scroll_filter = models.Filter(
                     should=[
                         models.FieldCondition(key="course_id", match=models.MatchValue(value=curs_id)),
@@ -180,7 +175,7 @@ def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict
                 extra={"curs_id": curs_id, "error": str(e)},
             )
 
-    # Cautare pe date simulate (Mock Fallback)
+    # Cautare pe date predefinite (Fallback)
     contexte_gasite = []
     cuvinte_intrebare = set([w for w in intrebare.lower().split() if len(w) > 2])
 
@@ -199,10 +194,8 @@ def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict
 
 def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = None, limit: int = 15) -> list[dict]:
     """
-    Recuperează fragmente brute de text (chunks) din Qdrant fără căutare vectorială semantică.
-    Folosește metoda de scroll pe baza ID-ului de curs/săptămână sau document_id.
-    Pentru diversitate, face scroll la un număr mai mare de fragmente, le amestecă (shuffle) 
-    și selectează un subset de dimensiune `limit`.
+    Recupereaza chunks din Qdrant prin scroll, fara cautare vectoriala.
+    Filtrul se bazeaza pe ID-ul cursului/saptamanii sau document_id.
     """
     use_mock = os.environ.get("USE_QDRANT_MOCK", "true").lower() in ("true", "1", "yes")
     import random
@@ -218,7 +211,7 @@ def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = N
 
             client = QdrantClient(host=host, port=port, timeout=10.0)
 
-            # Construire filtre
+            # Filtre Qdrant
             must_conditions = []
             if document_id is not None:
                 must_conditions.append(models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id)))
@@ -233,7 +226,7 @@ def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = N
 
             scroll_filter = models.Filter(must=must_conditions)
 
-            # Scroll pe mai multe puncte pentru a permite diversitatea prin amestecare
+            # Scroll pe mai multe puncte
             scroll_results, _ = client.scroll(
                 collection_name=collection,
                 scroll_filter=scroll_filter,
@@ -283,7 +276,7 @@ def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = N
                 extra={"curs_id": curs_id, "error": str(e)},
             )
 
-    # Mock Fallback
+    # Fallback pe date predefinite
     contexte_gasite = []
     for doc in MOCK_DOCUMENTS:
         if document_id is not None:
