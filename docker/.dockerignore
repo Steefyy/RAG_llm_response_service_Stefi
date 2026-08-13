@@ -8,3 +8,4 @@ __pycache__/
 .git
 reranker-service/
 embedder_service/
+tests/

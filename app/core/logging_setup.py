@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from logging_ctx import request_id_var
+from .logging_ctx import request_id_var
 
 from datetime import datetime
 

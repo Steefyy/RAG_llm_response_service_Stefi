@@ -2,15 +2,17 @@ import json
 import re
 
 from fastapi import FastAPI, HTTPException, Depends
-from models import ChatRequest, ChatResponse, QuizGenerateRequest, QuizRequest, QuizQuestion, FlashcardGenerateRequest, FlashcardItem
-from llm_service import genereaza_raspuns, verifica_conexiune, genereaza_quiz as genereaza_quiz_llm
-from prompt_builder import construieste_prompt, construieste_prompt_quiz, construieste_prompt_flashcards
-from retrieval_service import cauta_context, cauta_contexte_scroll
-from reranker_service import reordoneaza_contexte
-from security_guard import valideaza_intrebare
-from auth import verify_credentials
-from logging_setup import setup_logging
-from middleware import request_context
+from app.core import (
+    ChatRequest, ChatResponse, QuizGenerateRequest, QuizRequest, QuizQuestion, 
+    FlashcardGenerateRequest, FlashcardItem,
+    construieste_prompt, construieste_prompt_quiz, construieste_prompt_flashcards,
+    setup_logging
+)
+from app.services import (
+    genereaza_raspuns, verifica_conexiune, cauta_context, 
+    cauta_contexte_scroll, reordoneaza_contexte, genereaza_quiz as genereaza_quiz_llm
+)
+from app.auth import verify_credentials, request_context, valideaza_intrebare
 
 setup_logging()
 

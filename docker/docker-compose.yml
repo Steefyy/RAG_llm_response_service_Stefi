@@ -1,12 +1,14 @@
 services:
   # 1. Serviciul tau principal de Chat (Persoana A - Port 8000)
   llm-chat-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: llm-chat-service
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - ../.env
     environment:
       - RERANKER_URL=http://reranker-service:8002/api/rerank/chunks
       - EMBEDDER_URL=http://embedder-service:8001/api/query/embed

@@ -1,32 +1,12 @@
 import os
 import httpx
-from logging_ctx import request_id_var, user_var
-from pydantic import BaseModel
+from app.core.logging_ctx import request_id_var, user_var
+from app.core.models import Chunk, RerankRequest, RerankedChunk, RerankResponse
 
 RERANKER_URL = os.environ.get("RERANKER_URL", "http://localhost:8002/api/rerank/chunks")
 RAG_SERVICE_USERNAME = os.environ.get("RAG_SERVICE_USERNAME")
 RAG_SERVICE_PASSWORD = os.environ.get("RAG_SERVICE_PASSWORD")
 RERANKER_AUTH = (RAG_SERVICE_USERNAME, RAG_SERVICE_PASSWORD) if RAG_SERVICE_USERNAME and RAG_SERVICE_PASSWORD else None
-
-# Definim modelele contractului de Reranker
-class Chunk(BaseModel):
-    text: str
-    score: float
-    chunk_id: str
-
-class RerankRequest(BaseModel):
-    query: str
-    chunks: list[Chunk]
-    top_k: int
-
-class RerankedChunk(BaseModel):
-    text: str
-    rerank_score: float
-    chunk_id: str
-    original_rank: int
-
-class RerankResponse(BaseModel):
-    reranked_chunks: list[RerankedChunk]
 
 
 def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:

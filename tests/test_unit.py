@@ -1,12 +1,12 @@
 import pytest
 import os
 from unittest.mock import patch, MagicMock
-from security_guard import valideaza_intrebare
-from models import ChatRequest, ChatResponse, Message
-from prompt_builder import construieste_prompt
-from retrieval_service import cauta_context, obtine_embedding_intrebare, MOCK_DOCUMENTS
-from reranker_service import reordoneaza_contexte
-from main import app
+from app.auth import valideaza_intrebare
+from app.core import ChatRequest, ChatResponse, Message, construieste_prompt
+from app.services import cauta_context, reordoneaza_contexte
+from app.services.retrieval_service import obtine_embedding_intrebare
+from tests.mock_data import MOCK_DOCUMENTS
+from app.main import app
 from fastapi.testclient import TestClient
 
 client = TestClient(app)
@@ -70,7 +70,7 @@ def test_health_endpoint():
     data = response.json()
     assert "status" in data
 
-@patch("main.genereaza_raspuns")
+@patch("app.main.genereaza_raspuns")
 def test_chat_endpoint_success(mock_gen):
     mock_gen.return_value = "Răspuns academic de test."
     payload = {
@@ -101,19 +101,19 @@ def test_security_guard_too_long():
     assert res.safe is False
     assert "prea lung" in res.reason
 
-@patch("llm_service.client.models.list")
+@patch("app.services.llm_service.client.models.list")
 def test_verifica_conexiune_fail(mock_list):
     mock_list.side_effect = Exception("API Key Invalid")
-    from llm_service import verifica_conexiune
+    from app.services.llm_service import verifica_conexiune
     assert verifica_conexiune() is False
 
-@patch("llm_service.client.models.generate_content")
+@patch("app.services.llm_service.client.models.generate_content")
 def test_genereaza_raspuns_success(mock_generate):
     mock_response = MagicMock()
     mock_response.text = "Mocked LLM answer"
     mock_generate.return_value = mock_response
     
-    from llm_service import genereaza_raspuns
+    from app.services.llm_service import genereaza_raspuns
     ans = genereaza_raspuns("Test prompt")
     assert ans == "Mocked LLM answer"
     mock_generate.assert_called_once()
@@ -130,7 +130,7 @@ def test_chat_endpoint_unsafe():
     data = response.json()
     assert "Cerere respinsă" in data["raspuns"]
 
-@patch("main.genereaza_raspuns")
+@patch("app.main.genereaza_raspuns")
 def test_chat_endpoint_llm_failure(mock_gen):
     mock_gen.side_effect = Exception("Gemini API Error")
     payload = {
@@ -198,7 +198,7 @@ def test_obtine_embedding_intrebare_exception(mock_post):
     res = obtine_embedding_intrebare("Test query")
     assert res is None
 
-@patch("retrieval_service.obtine_embedding_intrebare")
+@patch("app.services.retrieval_service.obtine_embedding_intrebare")
 @patch("qdrant_client.QdrantClient")
 @patch.dict(os.environ, {"USE_QDRANT_MOCK": "false"})
 def test_cauta_context_qdrant_success(mock_qdrant_class, mock_get_embed):
@@ -219,7 +219,7 @@ def test_cauta_context_qdrant_success(mock_qdrant_class, mock_get_embed):
     assert len(res) == 1
     assert res[0]["text"] == "Qdrant mock result"
 
-@patch("retrieval_service.obtine_embedding_intrebare")
+@patch("app.services.retrieval_service.obtine_embedding_intrebare")
 @patch("qdrant_client.QdrantClient")
 @patch.dict(os.environ, {"USE_QDRANT_MOCK": "false"})
 def test_cauta_context_qdrant_fail(mock_qdrant_class, mock_get_embed):
@@ -248,7 +248,7 @@ def test_reordoneaza_contexte_http_success_no_original(mock_post):
     assert len(rezultate) == 1
     assert rezultate[0]["document_id"] == 999
 
-@patch("retrieval_service.obtine_embedding_intrebare")
+@patch("app.services.retrieval_service.obtine_embedding_intrebare")
 @patch("qdrant_client.QdrantClient")
 @patch.dict(os.environ, {"USE_QDRANT_MOCK": "false"})
 def test_cauta_context_qdrant_query_points(mock_qdrant_class, mock_get_embed):
