@@ -5,9 +5,9 @@ from fastapi import FastAPI, HTTPException, Depends
 from app.core import (
     ChatRequest, ChatResponse, QuizGenerateRequest, QuizRequest, QuizQuestion, 
     FlashcardGenerateRequest, FlashcardItem,
-    construieste_prompt, construieste_prompt_quiz, construieste_prompt_flashcards,
-    setup_logging
+    construieste_prompt, construieste_prompt_quiz, construieste_prompt_flashcards
 )
+from app.loggig import setup_logging
 from app.services import (
     genereaza_raspuns, verifica_conexiune, cauta_context, 
     cauta_contexte_scroll, reordoneaza_contexte, genereaza_quiz as genereaza_quiz_llm

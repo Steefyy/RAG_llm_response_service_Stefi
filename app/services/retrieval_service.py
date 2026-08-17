@@ -1,7 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
-from app.core.logging_ctx import request_id_var, user_var
+from app.loggig.logging_ctx import request_id_var, user_var
 
 import logging
 
