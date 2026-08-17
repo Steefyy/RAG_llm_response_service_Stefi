@@ -1,6 +1,6 @@
 import os
 import httpx
-from app.loggig.logging_ctx import request_id_var, user_var
+from app.logging.logging_ctx import request_id_var, user_var
 from app.core.models import Chunk, RerankRequest, RerankedChunk, RerankResponse
 
 RERANKER_URL = os.environ.get("RERANKER_URL", "http://localhost:8002/api/rerank/chunks")
