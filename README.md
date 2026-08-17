@@ -6,10 +6,10 @@ Sistem integrat de **Asistent Academic Inteligent (RAG)** dezvoltat în FastAPI 
 
 Sistemul furnizează răspunsuri precise și generări structurate pe baza suporturilor de curs furnizate de profesori:
 1. **Prevenirea halucinațiilor (Strict Grounding)**: Răspunde **exclusiv** pe baza documentelor de curs reale (PDF/Word), evitând adăugarea de cunoștințe exterioare.
-2. **Izolarea cunoștințelor pe Săptămâni**: Un student dintr-o anumită săptămână de curs are acces strict la informațiile din săptămânile deja finalizate de el.
-3. **Scut anti-Prompt Injection**: Filtru de securitate local offline (Jailbreak protection) pentru blocarea tentativelor de manipulare a instrucțiunilor AI-ului.
-4. **Generare Inteligentă de Materiale (Nou)**: Generează teste grilă multiple-choice (cu răspunsuri corecte și explicații) și fișe de memorare (Flashcards concept-definiție) în format structurat (JSON Mode via Gemini).
-5. **Arhitectură RAG Performantă**: Vectorizare prin Embedder (`BAAI/bge-m3`), căutare semantică în Qdrant și reclasificare de mare precizie prin CrossEncoder Reranker (`mmarco-mMiniLMv2`).
+2. **Izolarea cunoștințelor pe săptămâni**: Un student dintr-o anumită săptămână de curs are acces strict la informațiile din săptămânile deja finalizate de el.
+3. **Scut anti-Prompt injection**: Filtru de securitate local offline (Jailbreak protection) pentru blocarea tentativelor de manipulare a instrucțiunilor AI-ului.
+4. **Generare de materiale (Nou)**: Generează teste grilă multiple-choice (cu răspunsuri corecte și explicații) și fișe de memorare (Flashcards concept-definiție) în format structurat (JSON Mode via Gemini).
+5. **Arhitectură RAG **: Vectorizare prin Embedder (`BAAI/bge-m3`), căutare semantică în Qdrant și reclasificare de mare precizie prin CrossEncoder Reranker (`mmarco-mMiniLMv2`).
 
 ---
 
