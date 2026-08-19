@@ -21,17 +21,17 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
     try:
         # Pregatim payload-ul conform specificatiilor RerankRequest
         chunks_payload = []
-        for doc in contexte_brute:
+        for idx, doc in enumerate(contexte_brute):
             chunks_payload.append({
                 "text": doc["text"],
                 "score": 1.0, 
-                "chunk_id": str(doc["document_id"])
+                "chunk_id": str(idx)
             })
 
         request_body = {
             "query": intrebare,
             "chunks": chunks_payload,
-            "top_k": 5
+            "top_k": 8
         }
 
         with httpx.Client(timeout=30.0) as client:
@@ -49,20 +49,11 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
                 # Reordonam documentele originale pastrand metadatele (week_id, curs_id)
                 contexte_ordonate = []
                 for rc in reranked_chunks:
-                    doc_id = int(rc["chunk_id"])
-                    
-                    original_doc = next((d for d in contexte_brute if d["document_id"] == doc_id), None)
-                    if original_doc:
-                        contexte_ordonate.append(original_doc)
-                    else:
-                        contexte_ordonate.append({
-                            "document_id": doc_id,
-                            "curs_id": 45,
-                            "week_id": 1,
-                            "text": rc["text"]
-                        })
+                    idx = int(rc["chunk_id"])
+                    if 0 <= idx < len(contexte_brute):
+                        contexte_ordonate.append(contexte_brute[idx])
                 return contexte_ordonate
     except Exception as e:
         print(f"[RERANKER WARNING] Serviciul Reranker offline sau eroare: {e}. Folosim fallback.")
         
-    return contexte_brute[:5]
+    return contexte_brute[:8]
