@@ -52,6 +52,7 @@ class JsonFormatter(logging.Formatter):
 
 def setup_logging(level: str | None = None) -> None:
     level = level or os.getenv("LOG_LEVEL", "INFO")
+    level = level.strip().upper()
     fmt = os.getenv("LOG_FORMAT", "text").lower()
 
     handler = logging.StreamHandler(sys.stdout)
@@ -66,7 +67,13 @@ def setup_logging(level: str | None = None) -> None:
 
     root = logging.getLogger()
     root.handlers = [handler]
-    root.setLevel(level)
+
+    level_valid = level in logging.getLevelNamesMapping()
+    root.setLevel(level if level_valid else "INFO")
+    if not level_valid:
+        logging.getLogger(__name__).warning(
+            "log_level_invalid: %r nu e un nivel cunoscut, folosesc INFO", level
+        )
 
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         lg = logging.getLogger(name)

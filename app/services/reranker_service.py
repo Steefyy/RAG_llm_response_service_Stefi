@@ -1,4 +1,5 @@
 import os
+import logging
 import httpx
 from app.logging.logging_ctx import request_id_var, user_var
 from app.core.models import Chunk, RerankRequest, RerankedChunk, RerankResponse
@@ -7,6 +8,8 @@ RERANKER_URL = os.environ.get("RERANKER_URL", "http://localhost:8002/api/rerank/
 RAG_SERVICE_USERNAME = os.environ.get("RAG_SERVICE_USERNAME")
 RAG_SERVICE_PASSWORD = os.environ.get("RAG_SERVICE_PASSWORD")
 RERANKER_AUTH = (RAG_SERVICE_USERNAME, RAG_SERVICE_PASSWORD) if RAG_SERVICE_USERNAME and RAG_SERVICE_PASSWORD else None
+
+log = logging.getLogger(__name__)
 
 
 def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
@@ -53,7 +56,9 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
                     if 0 <= idx < len(contexte_brute):
                         contexte_ordonate.append(contexte_brute[idx])
                 return contexte_ordonate
+            else:
+                log.warning("reranker_status_neasteptat", extra={"status": response.status_code, "n_contexte": len(contexte_brute)})
     except Exception as e:
-        print(f"[RERANKER WARNING] Serviciul Reranker offline sau eroare: {e}. Folosim fallback.")
+        log.warning("reranker_indisponibil", extra={"eroare": str(e), "n_contexte": len(contexte_brute)})
         
     return contexte_brute[:8]
