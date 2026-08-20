@@ -92,14 +92,14 @@ def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict
                         collection_name=collection,
                         query_vector=query_vector,
                         query_filter=scroll_filter,
-                        limit=10
+                        limit=50
                     )
                 else:
                     response_qp = client.query_points(
                         collection_name=collection,
                         query=query_vector,
                         query_filter=scroll_filter,
-                        limit=10
+                        limit=50
                     )
                     search_results = response_qp.points
 
@@ -122,13 +122,16 @@ def cauta_context(intrebare: str, curs_id: int, max_saptamana: int) -> list[dict
                     c_id = payload.get("course_id") or payload.get("curs_id", curs_id)
                     doc_id = payload.get("document_id", 999)
                     w_id = payload.get("week_id", max_saptamana)
+                    doc_title = payload.get("document_title") or f"Document {doc_id}"
 
                     contexte_qdrant.append({
                         "document_id": int(doc_id) if str(doc_id).isdigit() else 999,
+                        "document_title": str(doc_title),
                         "curs_id": int(c_id),
                         "week_id": int(w_id),
                         "text": str(text_content)
                     })
+
 
                 if contexte_qdrant:
                     logger.info(
@@ -231,9 +234,11 @@ def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = N
                 c_id = payload.get("course_id") or payload.get("curs_id", curs_id)
                 doc_id = payload.get("document_id", 999)
                 w_id = payload.get("week_id", max_saptamana)
+                doc_title = payload.get("document_title") or f"Document {doc_id}"
 
                 contexte_qdrant.append({
                     "document_id": int(doc_id) if str(doc_id).isdigit() else 999,
+                    "document_title": str(doc_title),
                     "curs_id": int(c_id),
                     "week_id": int(w_id),
                     "text": str(text_content)
@@ -271,3 +276,71 @@ def cauta_contexte_scroll(curs_id: int, max_saptamana: int, document_id: int = N
 
     random.shuffle(contexte_gasite)
     return contexte_gasite[:limit]
+
+
+def extinde_contexte_mici(context_chunks: list, curs_id: int, max_saptamana: int) -> list:
+    """
+    Daca un document mic (sub 20 de chunks total in Qdrant) are cel putin un fragment 
+    in primele 3 rezultate reordonate, aducem toate fragmentele sale in contextul final.
+    Acest lucru previne fragmentarea documentelor mici (de tip syllabus sau spec).
+    """
+    if not context_chunks:
+        return context_chunks
+
+    import os
+    from qdrant_client import QdrantClient
+    from qdrant_client.http import models
+
+    host = os.environ.get("QDRANT_HOST", "localhost")
+    port = int(os.environ.get("QDRANT_PORT", 6333))
+    collection = os.environ.get("QDRANT_COLLECTION", "course_chunks")
+
+    try:
+        client = QdrantClient(host=host, port=port, timeout=10.0)
+
+        # Identificam documentele unice din primele 3 rezultate reordonate
+        top_doc_ids = []
+        for c in context_chunks[:3]:
+            d_id = c.get("document_id")
+            if d_id is not None and d_id not in top_doc_ids:
+                top_doc_ids.append(d_id)
+
+        contexte_extinse = list(context_chunks)
+
+        for d_id in top_doc_ids:
+            doc_filter = models.Filter(
+                must=[
+                    models.FieldCondition(key="document_id", match=models.MatchValue(value=d_id))
+                ]
+            )
+            # Preluam toate fragmentele acestui document
+            scroll_result = client.scroll(
+                collection_name=collection,
+                scroll_filter=doc_filter,
+                limit=30,
+                with_payload=True,
+                with_vectors=False
+            )
+            if isinstance(scroll_result, tuple) and len(scroll_result) == 2:
+                all_doc_chunks, _ = scroll_result
+                # Daca documentul are sub 20 de fragmente total, il consideram mic
+                if all_doc_chunks and len(all_doc_chunks) < 20:
+                    existing_texts = {c["text"] for c in contexte_extinse if c.get("document_id") == d_id}
+                    for chunk in all_doc_chunks:
+                        p = chunk.payload or {}
+                        chunk_text = p.get("chunk_text") or p.get("text", "")
+                        if chunk_text not in existing_texts:
+                            c_id = p.get("course_id") or p.get("curs_id", curs_id)
+                            w_id = p.get("week_id", max_saptamana)
+                            doc_title = p.get("document_title") or f"Document {d_id}"
+                            contexte_extinse.append({
+                                "document_id": int(d_id),
+                                "document_title": str(doc_title),
+                                "curs_id": int(c_id),
+                                "week_id": int(w_id),
+                                "text": str(chunk_text)
+                            })
+        return contexte_extinse
+    except Exception as ex:
+        logger.warning(f"Extinderea contextului (post-rerank) a esuat: {ex}")
+        return context_chunks

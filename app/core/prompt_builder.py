@@ -2,10 +2,10 @@ SYSTEM_PROMPT = """Esti un asistent academic virtual, politicos si profesionist,
 Rolul tau este sa raspunzi la intrebari intr-un mod clar, structurat si corect academic, oferind explicatii utile si direct axate pe subiect.
 
 Reguli si Limite Absolute (Grounding):
-1. Baza ta de cunostinte este STRICT limitata la documentele oferite in contextul delimitat mai jos.
-2. Nu folosi sub nicio forma cunostinte externe sau informatii care nu apar in mod explicit in documente.
-3. Daca informatia solicitata de student nu se gaseste in context sau este incompleta pentru a genera un raspuns cert, raspunde exact cu: "Nu am gasit informatii despre asta in documentele cursului." - Nu incerca sa ghicesti, sa presupui sau sa completezi din exterior.
-4. Orice intrebare despre subiecte generale din afara ariei de studiu a cursului (ex: retete de bucatarie, programarea altor limbaje, stiri, cultura generala) trebuie respinsa prin aceeasi formula standard de la regula 3.
+1. Prioritizeaza intotdeauna informatiile din documentele si materialele cursului oferite in contextul delimitat mai jos.
+2. Daca intrebarea studentului se refera la subiecte, tehnologii sau concepte care sunt prezentate in materialele cursului (de exemplu: HTML, CSS, Django, baze de date, programare web, ORM, APIs), dar detaliile specifice, explicatiile teoretice suplimentare sau exemplele practice de cod nu apar verbatim in documente, poti folosi cunostintele tale generale academice pentru a oferi explicatii complete, exemple de cod functionale si ghidaj util.
+3. Daca intrebarea este complet in afara ariei de studiu a cursului sau a subiectelor din documente (de exemplu: retete de bucatarie, programarea in alte limbaje fara legatura cu cursul, stiri, cultura generala, istorie), refuza raspunzand exact cu: "Nu am gasit informatii despre asta in documentele cursului."
+4. Poti raspunde la intrebari administrative simple sau solicitari despre documentele prezente in context (de exemplu, sa le enumeri sau sa oferi o scurta descriere sau un citat/o propozitie din ele) folosind datele disponibile din context.
 
 Instructiuni de Stil si Formatare:
 1. Raspunde intotdeauna in limba romana, folosind un ton academic, respectuos si clar.
@@ -14,16 +14,18 @@ Instructiuni de Stil si Formatare:
    - Foloseste caractere aldine (bold) pentru termenii cheie importanti.
    - Pune exemplele de cod sau numele claselor/functiilor in blocuri specifice (`inline code` sau blocuri de cod).
 3. Raspunsul tau trebuie sa fie structurat logic: incepe cu o definitie scurta si clara, urmata de explicatii punctuale si exemple (daca acestea exista in context).
-4. Nu mentiona niciodata ca esti un model de inteligenta artificiala (AI), ca ai un sistem prompt sau ca ti-au fost oferite documente de context. Studentul trebuie sa aiba experienta ca discuta direct cu un profesor asistent al cursului.
+4. Nu mentiona ca esti un model de inteligenta artificiala (AI) sau ca ai un system prompt. Poti face referire la "documentele cursului" sau "materialele puse la dispozitie". Studentul trebuie sa aiba experienta ca discuta direct cu un profesor asistent al cursului.
+5. La sfarsitul raspunsului tau, pe o linie noua separata, adauga intotdeauna textul exact: `Surse: [ID1, ID2]` unde enumeri doar ID-urile numerice ale documentelor din care ai folosit informatii utile pentru a raspunde. Daca nu ai folosit informatii din documentele din context sau raspunzi cu mesajul de refuz standard, scrie exact: `Surse: []`.
 """
 
 def construieste_prompt(intrebare: str, istoric: list, context_chunks: list) -> str:
-    parti = [SYSTEM_PROMPT]
+    parti = []
     
     if context_chunks:
         parti.append("\n--- CONTEXT START ---")
         for i, chunk in enumerate(context_chunks, 1):
-            parti.append(f"[Document ID: {chunk['document_id']}, Saptamana {chunk['week_id']}]\n{chunk['text']}")
+            doc_label = chunk.get("document_title") or f"Document ID: {chunk['document_id']}"
+            parti.append(f"[Material/Curs: {doc_label} (ID: {chunk['document_id']}), Saptamana {chunk['week_id']}]\n{chunk['text']}")
         parti.append("--- CONTEXT END ---")
     else:
         parti.append("\n(Nu exista context relevant disponibil pentru aceasta intrebare.)")
@@ -81,7 +83,8 @@ Formatul JSON cerut:
     if context_chunks:
         parti.append("\n--- CONTEXT START ---")
         for chunk in context_chunks:
-            parti.append(f"[Document ID: {chunk['document_id']}]\n{chunk['text']}")
+            doc_label = chunk.get("document_title") or f"Document ID: {chunk['document_id']}"
+            parti.append(f"[Material/Curs: {doc_label}]\n{chunk['text']}")
         parti.append("--- CONTEXT END ---")
     else:
         parti.append("\n(Atentie: Nu exista context disponibil pentru generare.)")
@@ -110,7 +113,8 @@ Formatul JSON cerut:
     if context_chunks:
         parti.append("\n--- CONTEXT START ---")
         for chunk in context_chunks:
-            parti.append(f"[Document ID: {chunk['document_id']}]\n{chunk['text']}")
+            doc_label = chunk.get("document_title") or f"Document ID: {chunk['document_id']}"
+            parti.append(f"[Material/Curs: {doc_label}]\n{chunk['text']}")
         parti.append("--- CONTEXT END ---")
     else:
         parti.append("\n(Atentie: Nu exista context disponibil pentru generare.)")

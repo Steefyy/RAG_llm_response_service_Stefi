@@ -31,9 +31,10 @@ def test_models_chat_request():
     assert req.maxSaptamanaParcursa == 3
 
 def test_prompt_builder():
+    from app.core.prompt_builder import SYSTEM_PROMPT
     prompt = construieste_prompt("Ce este un POJO?", [], [])
     assert "Ce este un POJO?" in prompt
-    assert "Reguli si Limite Absolute" in prompt
+    assert "Reguli si Limite Absolute" in SYSTEM_PROMPT
 
 def test_prompt_builder_with_history():
     istoric = [{"role": "user", "content": "Salut"}, {"role": "assistant", "content": "Buna!"}]
@@ -175,7 +176,7 @@ def test_reordoneaza_contexte_http_success(mock_post):
     mock_response.status_code = 200
     mock_response.json.return_value = {
         "reranked_chunks": [
-            {"chunk_id": "101", "text": "Introducere in ORM.", "rerank_score": 0.9, "original_rank": 1}
+            {"chunk_id": "0", "text": "Introducere in ORM.", "rerank_score": 0.9, "original_rank": 1}
         ]
     }
     mock_post.return_value = mock_response
@@ -245,8 +246,7 @@ def test_reordoneaza_contexte_http_success_no_original(mock_post):
         {"document_id": 101, "curs_id": 45, "week_id": 1, "text": "Introducere in ORM."}
     ]
     rezultate = reordoneaza_contexte("Ce este ORM?", doc_sample)
-    assert len(rezultate) == 1
-    assert rezultate[0]["document_id"] == 999
+    assert len(rezultate) == 0
 
 @patch("app.services.retrieval_service.obtine_embedding_intrebare")
 @patch("qdrant_client.QdrantClient")

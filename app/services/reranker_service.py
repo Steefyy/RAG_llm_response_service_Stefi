@@ -31,7 +31,7 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
         request_body = {
             "query": intrebare,
             "chunks": chunks_payload,
-            "top_k": 8
+            "top_k": 12
         }
 
         with httpx.Client(timeout=30.0) as client:
@@ -56,4 +56,4 @@ def reordoneaza_contexte(intrebare: str, contexte_brute: list) -> list:
     except Exception as e:
         print(f"[RERANKER WARNING] Serviciul Reranker offline sau eroare: {e}. Folosim fallback.")
         
-    return contexte_brute[:8]
+    return contexte_brute[:12]

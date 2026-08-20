@@ -6,14 +6,17 @@ from google.genai import types
 load_dotenv(override=True)
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+from app.core.prompt_builder import SYSTEM_PROMPT
 
 def genereaza_raspuns(prompt: str) -> str:
     # Setam temperature=0.2 pentru ca raspunsurile sa ramana precise, academice si factuale
+    # Folosim system_instruction pentru o aderenta maxima la regulile din prompt
     response = client.models.generate_content(
         model=MODEL_NAME,
         contents=prompt,
         config=types.GenerateContentConfig(
-            temperature=0.2
+            temperature=0.2,
+            system_instruction=SYSTEM_PROMPT
         )
     )
     return response.text

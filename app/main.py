@@ -10,7 +10,9 @@ from app.core import (
 from app.logging import setup_logging
 from app.services import (
     genereaza_raspuns, verifica_conexiune, cauta_context, 
-    cauta_contexte_scroll, reordoneaza_contexte, genereaza_quiz as genereaza_quiz_llm
+    cauta_contexte_scroll, reordoneaza_contexte, extinde_contexte_mici,
+    genereaza_quiz as genereaza_quiz_llm,
+    genereaza_flashcards as genereaza_flashcards_llm
 )
 from app.auth import verify_credentials, request_context, valideaza_intrebare
 
@@ -93,6 +95,9 @@ def chat(request: ChatRequest):
     # Reordonare si filtrare documente folosind serviciul de reranking
     context_chunks = reordoneaza_contexte(request.intrebare, context_chunks_brute)
 
+    # Extindere context pentru documente mici (evitare fragmentare/filtrare post-rerank)
+    context_chunks = extinde_contexte_mici(context_chunks, request.cursId, request.maxSaptamanaParcursa)
+
     # Constructie prompt pe baza contextului si a istoricului conversatiei
     prompt = construieste_prompt(request.intrebare, request.istoricConversatie, context_chunks)
 
@@ -106,7 +111,25 @@ def chat(request: ChatRequest):
         )
 
     # Extragere surse (document_id) folosite
-    surse_folosite = list(set([c["document_id"] for c in context_chunks]))
+    surse_folosite = []
+    if "Nu am gasit informatii despre asta in documentele cursului" in raspuns_text:
+        surse_folosite = []
+    else:
+        # Cautam formatul "Surse: [ID1, ID2]"
+        match = re.search(r"Surse:\s*\[(.*?)\]", raspuns_text)
+        if match:
+            surse_str = match.group(1).strip()
+            if surse_str:
+                try:
+                    surse_folosite = list(set([int(x.strip()) for x in surse_str.split(",") if x.strip().isdigit()]))
+                except Exception:
+                    pass
+            # Eliminam tag-ul "Surse: [...]" din textul raspunsului
+            raspuns_text = re.sub(r"\s*Surse:\s*\[.*?\].*?$", "", raspuns_text, flags=re.MULTILINE).strip()
+        else:
+            # Fallback: daca nu a reusit parsarea sau tagul lipseste,
+            # folosim doar documentele din primele 2 cele mai relevante chunks
+            surse_folosite = list(set([c["document_id"] for c in context_chunks[:2]]))
 
     return ChatResponse(raspuns=raspuns_text, surseFolosite=surse_folosite)
 
@@ -181,7 +204,7 @@ def genereaza_flashcards(request: FlashcardGenerateRequest):
     prompt = construieste_prompt_flashcards(context_chunks, nr_flashcards)
 
     try:
-        raspuns_text = genereaza_quiz_llm(prompt)
+        raspuns_text = genereaza_flashcards_llm(prompt)
         return _normalizeaza_flashcards(_extrage_json(raspuns_text))
     except Exception as e:
         print(f"[FLASHCARDS GENERATION ERROR] {e}")
